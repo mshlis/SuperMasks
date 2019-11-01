@@ -12,7 +12,7 @@ from __future__ import division
 import warnings
 
 from keras.models import Model
-from keras.layers import Dropout, Activation
+from keras.layers import Dropout, Activation, Dense, Conv2D
 from keras.layers.pooling import MaxPooling2D, GlobalAveragePooling2D
 from keras.layers import Input
 from keras.layers.merge import add
@@ -23,7 +23,7 @@ from keras.engine.topology import get_source_inputs
 from keras_applications.imagenet_utils import _obtain_input_shape
 import keras.backend as K
 
-from MaskedOps import MaskedDense as Dense, MaskedConv2D as Conv2D
+from MaskedOps import MaskedDense, MaskedConv2D
 
 TH_WEIGHTS_PATH = ('https://github.com/titu1994/Wide-Residual-Networks/'
                    'releases/download/v1.2/wrn_28_8_th_kernels_th_dim_ordering.h5')
@@ -35,10 +35,16 @@ TF_WEIGHTS_PATH_NO_TOP = ('https://github.com/titu1994/Wide-Residual-Networks/re
                           'download/v1.2/wrn_28_8_tf_kernels_tf_dim_ordering_no_top.h5')
 
 
-def WideResidualNetwork(depth=28, width=8, dropout_rate=0.0,
-                        include_top=True, weights='cifar10',
-                        input_tensor=None, input_shape=None,
-                        classes=10, activation='softmax'):
+def WideResidualNetwork(depth=28, 
+                        width=8, 
+                        dropout_rate=0.0,
+                        include_top=True, 
+                        weights='cifar10',
+                        input_tensor=None, 
+                        input_shape=None,
+                        mask=False,
+                        classes=10, 
+                        activation='softmax'):
     """Instantiate the Wide Residual Network architecture,
         optionally loading weights pre-trained
         on CIFAR-10. Note that when using TensorFlow,
@@ -72,7 +78,11 @@ def WideResidualNetwork(depth=28, width=8, dropout_rate=0.0,
         # Returns
             A Keras model instance.
         """
-
+    
+    if mask:
+        Conv2D = MaskedConv2D
+        Dense = MaskedDense
+        
     if weights not in {'cifar10', None}:
         raise ValueError('The `weights` argument should be either '
                          '`None` (random initialization) or `cifar10` '
