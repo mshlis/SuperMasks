@@ -34,7 +34,6 @@ TH_WEIGHTS_PATH_NO_TOP = ('https://github.com/titu1994/Wide-Residual-Networks/re
 TF_WEIGHTS_PATH_NO_TOP = ('https://github.com/titu1994/Wide-Residual-Networks/releases/'
                           'download/v1.2/wrn_28_8_tf_kernels_tf_dim_ordering_no_top.h5')
 
-
 def WideResidualNetwork(depth=28, 
                         width=8, 
                         dropout_rate=0.0,
@@ -43,6 +42,7 @@ def WideResidualNetwork(depth=28,
                         input_tensor=None, 
                         input_shape=None,
                         mask=False,
+                        mask_reg=None,
                         classes=10, 
                         activation='softmax'):
     """Instantiate the Wide Residual Network architecture,
@@ -78,11 +78,27 @@ def WideResidualNetwork(depth=28,
         # Returns
             A Keras model instance.
         """
+    global Conv2D
+    global Dense
     
     if mask:
-        Conv2D = MaskedConv2D
-        Dense = MaskedDense
-        
+        if mask_reg:
+            def mask_regularizer(w):
+                return -.001*K.sum(K.sigmoid(w))
+            
+            def Conv2D(*args, **kwargs):
+                return MaskedConv2D(*args, 
+                                    mask_regularizer=mask_regularizer,
+                                    **kwargs)
+            def Dense(*args, **kwargs):
+                return MaskedDense(*args, 
+                                    mask_regularizer=mask_regularizer,
+                                    **kwargs)
+        else:
+            Conv2D = MaskedConv2D
+            Dense = MaskedDense
+
+    
     if weights not in {'cifar10', None}:
         raise ValueError('The `weights` argument should be either '
                          '`None` (random initialization) or `cifar10` '
